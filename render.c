@@ -73,11 +73,15 @@ static void wait_for_sync()
     vga_ptr->front_buffer_addr = 1;
     while (vga_ptr->status & 1)
         ;
+
+    // switch to back buffer
     pixel_buffer_start = vga_ptr->back_buffer_addr;
 }
 
 void init_vga()
 {
+    // store the address of the two buffers into the vga regs
+    // and clear the two buffers
     vga_ptr->back_buffer_addr = (int)&Buffer1;
     wait_for_sync();
     pixel_buffer_start = vga_ptr->front_buffer_addr;
@@ -87,6 +91,8 @@ void init_vga()
     clear_screen();
 }
 
+// converts the game coordinate to the pixel coordinate of the
+// grid's center
 static Coordinate game_to_grid_center(int game_x, int game_y)
 {
     Coordinate grid_center;
@@ -95,6 +101,7 @@ static Coordinate game_to_grid_center(int game_x, int game_y)
     return grid_center;
 }
 
+// draw the grid on the screen
 static void draw_grid(int game_x, int game_y)
 {
     int color = ((game_x + game_y) % 2) ? LIGHT_GREEN : DARK_GREEN;
@@ -104,6 +111,7 @@ static void draw_grid(int game_x, int game_y)
             plot_pixel(grid_center.x + dx, grid_center.y + dy, color);
 }
 
+// draw all 17 * 15 grids on screen
 void draw_whole_grid()
 {
     for (int game_x = 0; game_x < WIDTH; game_x++)
@@ -113,18 +121,22 @@ void draw_whole_grid()
     wait_for_sync();
 }
 
+// draw a horizontal line
 static void draw_hline(int x1, int x2, int y, short int color)
 {
     for (int x = x1; x <= x2; x++)
         plot_pixel(x, y, color);
 }
 
+// draw a vertical line
 static void draw_vline(int x, int y1, int y2, short int color)
 {
     for (int y = y1; y <= y2; y++)
         plot_pixel(x, y, color);
 }
 
+// draw a part of the snake body
+// this part is a rectangle, so either x1 = x2 or y1 = y2
 static void draw_body_part(int x1, int y1, int x2, int y2)
 {
     if (x1 == x2)
@@ -143,16 +155,18 @@ static void draw_body_part(int x1, int y1, int x2, int y2)
     }
 }
 
+// initialization for the snake, set the last snake to empty
 void init_snake()
 {
     last_snake[0] = (Coordinate){-1, -1};
 }
 
+// extract the game coordinate of the head, turning points, and tail of the snake
 void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_points)
 {
     int length = 0;
 
-    // 找蛇长度
+    // find snake length
     while (length < 255 && snake_body[length].x != -1 && snake_body[length].y != -1)
     {
         length++;
@@ -166,10 +180,10 @@ void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_po
 
     int out_index = 0;
 
-    // 头
+    // extract the head
     output_points[out_index++] = snake_body[0];
 
-    // 中间点检测拐点
+    // turning points
     for (int i = 1; i < length - 1; i++)
     {
         int dx1 = snake_body[i].x - snake_body[i - 1].x;
@@ -184,24 +198,28 @@ void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_po
         }
     }
 
-    // 尾
+    // tail
     if (length > 1)
     {
         output_points[out_index++] = snake_body[length - 1];
     }
 
-    // 终止符
-    output_points[out_index] = (Coordinate){-1, -1};
+    // indication of stop
+    if (out_index < SNAKE_MAX_LENGTH)
+        output_points[out_index] = (Coordinate){-1, -1};
 }
 
+// update the snake from its last position to its current position.
+// creates the animation of the snake going from its last position
+// to the current position.
 void update_snake(const Coordinate *snake_body)
 {
-    // ---------- find new length ----------
+    // find new length
     int length = 0;
     while (snake_body[length].x != -1)
         length++;
 
-    // ---------- first frame ----------
+    // first frame
     if (last_snake[0].x == -1)
     {
         extract_snake_keypoints(snake_body, snake_critical_points);
@@ -222,14 +240,14 @@ void update_snake(const Coordinate *snake_body)
         return;
     }
 
-    // ---------- old length ----------
+    // old length
     int last_length = 0;
     while (last_snake[last_length].x != -1)
         last_length++;
 
     bool grew = (length > last_length);
 
-    // ---------- head ----------
+    // head
     Coordinate head_now = snake_body[0];
     Coordinate head_last = last_snake[0];
 
@@ -238,7 +256,7 @@ void update_snake(const Coordinate *snake_body)
 
     Coordinate head_pixel = game_to_grid_center(head_last.x, head_last.y);
 
-    // ---------- tail ----------
+    // tail
     Coordinate tail_last = last_snake[last_length - 1];
     Coordinate tail_prev = last_snake[last_length - 2];
 
@@ -247,10 +265,10 @@ void update_snake(const Coordinate *snake_body)
 
     Coordinate tail_pixel = game_to_grid_center(tail_last.x, tail_last.y);
 
-    // ---------- animation ----------
+    // animation
     for (int step = 0; step < GRID_SIZE; step++)
     {
-        // ===== draw head =====
+        // draw head
         head_pixel.x += head_dx;
         head_pixel.y += head_dy;
 
@@ -262,7 +280,7 @@ void update_snake(const Coordinate *snake_body)
             }
         }
 
-        // ===== erase tail gradually =====
+        // erase tail gradually
         if (!grew)
         {
             int erase_x = tail_pixel.x - tail_dx * HALF_BODY_WIDTH;
@@ -306,6 +324,6 @@ void update_snake(const Coordinate *snake_body)
         wait_for_sync();
     }
 
-    // ---------- save snake ----------
+    // save the current position to last position
     memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
 }
