@@ -17,6 +17,7 @@ short int Buffer1[240][512];     // 240 rows, 512 (320 + padding) columns
 short int Buffer2[240][512];
 
 static Coordinate last_snake[SNAKE_MAX_LENGTH];
+static Coordinate snake_critical_points[SNAKE_MAX_LENGTH];
 
 static Coordinate head_pixel;
 static Coordinate tail_pixel;
@@ -204,123 +205,118 @@ void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_po
     output_points[out_index] = (Coordinate){-1, -1};
 }
 
-static void draw_initial_snake(const Coordinate *snake_body)
+void update_snake(const Coordinate *snake_body)
 {
+    // ---------- find new length ----------
     int length = 0;
-
     while (snake_body[length].x != -1)
         length++;
 
-    snake_length = length;
-
-    for (int i = 0; i < length - 1; i++)
-    {
-        Coordinate a = game_to_grid_center(snake_body[i].x, snake_body[i].y);
-
-        Coordinate b = game_to_grid_center(snake_body[i + 1].x, snake_body[i + 1].y);
-
-        draw_body_part(a.x, a.y, b.x, b.y);
-    }
-
-    memcpy(last_snake, snake_body, sizeof(last_snake));
-}
-
-static void draw_head_pixel(int x, int y)
-{
-    for (int dx = -HALF_BODY_WIDTH; dx <= HALF_BODY_WIDTH; dx++)
-        for (int dy = -HALF_BODY_WIDTH; dy <= HALF_BODY_WIDTH; dy++)
-            plot_pixel(x + dx, y + dy, BLUE);
-}
-
-static void erase_tail_pixel(int x, int y, int dx, int dy)
-{
-    if (dx != 0) // horizontal snake
-    {
-        for (int dy2 = -HALF_BODY_WIDTH; dy2 <= HALF_BODY_WIDTH; dy2++)
-        {
-            int px = x;
-            int py = y + dy2;
-
-            int game_x = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
-            int game_y = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
-
-            if (game_x >= 0 && game_x < WIDTH && game_y >= 0 && game_y < HEIGHT)
-            {
-                int color = ((game_x + game_y) % 2) ? LIGHT_GREEN : DARK_GREEN;
-                plot_pixel_both_buffers(px, py, color);
-            }
-        }
-    }
-    else // vertical snake
-    {
-        for (int dx2 = -HALF_BODY_WIDTH; dx2 <= HALF_BODY_WIDTH; dx2++)
-        {
-            int px = x + dx2;
-            int py = y;
-
-            int game_x = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
-            int game_y = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
-
-            if (game_x >= 0 && game_x < WIDTH && game_y >= 0 && game_y < HEIGHT)
-            {
-                int color = ((game_x + game_y) % 2) ? LIGHT_GREEN : DARK_GREEN;
-                plot_pixel_both_buffers(px, py, color);
-            }
-        }
-    }
-}
-
-void update_snake(const Coordinate *snake_body)
-{
+    // ---------- first frame ----------
     if (last_snake[0].x == -1)
     {
-        draw_initial_snake(snake_body);
+        extract_snake_keypoints(snake_body, snake_critical_points);
+
+        for (int i = 0; snake_critical_points[i + 1].x != -1; i++)
+        {
+            Coordinate a = game_to_grid_center(snake_critical_points[i].x, snake_critical_points[i].y);
+
+            Coordinate b = game_to_grid_center(snake_critical_points[i + 1].x, snake_critical_points[i + 1].y);
+
+            draw_body_part(a.x, a.y, b.x, b.y);
+        }
+
         wait_for_sync();
+
+        memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
+
         return;
     }
 
-    int length = 0;
-    while (snake_body[length].x != -1)
-        length++;
+    // ---------- old length ----------
+    int last_length = 0;
+    while (last_snake[last_length].x != -1)
+        last_length++;
 
-    bool grew = (length > snake_length);
+    bool grew = (length > last_length);
 
+    // ---------- head ----------
     Coordinate head_now = snake_body[0];
     Coordinate head_last = last_snake[0];
 
-    head_px_dx = head_now.x - head_last.x;
-    head_px_dy = head_now.y - head_last.y;
+    int head_dx = head_now.x - head_last.x;
+    int head_dy = head_now.y - head_last.y;
 
-    Coordinate head_start = game_to_grid_center(head_last.x, head_last.y);
+    Coordinate head_pixel = game_to_grid_center(head_last.x, head_last.y);
 
-    head_pixel = head_start;
+    // ---------- tail ----------
+    Coordinate tail_last = last_snake[last_length - 1];
+    Coordinate tail_prev = last_snake[last_length - 2];
 
-    Coordinate tail_last = last_snake[snake_length - 1];
-    Coordinate tail_prev = last_snake[snake_length - 2];
+    int tail_dx = tail_prev.x - tail_last.x;
+    int tail_dy = tail_prev.y - tail_last.y;
 
-    tail_px_dx = tail_prev.x - tail_last.x;
-    tail_px_dy = tail_prev.y - tail_last.y;
+    Coordinate tail_pixel = game_to_grid_center(tail_last.x, tail_last.y);
 
-    tail_pixel = game_to_grid_center(tail_last.x, tail_last.y);
-
+    // ---------- animation ----------
     for (int step = 0; step < GRID_SIZE; step++)
     {
-        head_pixel.x += head_px_dx;
-        head_pixel.y += head_px_dy;
+        // ===== draw head =====
+        head_pixel.x += head_dx;
+        head_pixel.y += head_dy;
 
-        draw_head_pixel(head_pixel.x, head_pixel.y);
+        for (int dx = -HALF_BODY_WIDTH; dx <= HALF_BODY_WIDTH; dx++)
+        {
+            for (int dy = -HALF_BODY_WIDTH; dy <= HALF_BODY_WIDTH; dy++)
+            {
+                plot_pixel(head_pixel.x + dx, head_pixel.y + dy, BLUE);
+            }
+        }
 
+        // ===== erase tail gradually =====
         if (!grew)
         {
-            erase_tail_pixel(tail_pixel.x, tail_pixel.y, tail_px_dx, tail_px_dy);
+            int erase_x = tail_pixel.x - tail_dx * HALF_BODY_WIDTH;
+            int erase_y = tail_pixel.y - tail_dy * HALF_BODY_WIDTH;
 
-            tail_pixel.x += tail_px_dx;
-            tail_pixel.y += tail_px_dy;
+            if (tail_dx != 0)
+            {
+                for (int dy = -HALF_BODY_WIDTH; dy <= HALF_BODY_WIDTH; dy++)
+                {
+                    int px = erase_x;
+                    int py = erase_y + dy;
+
+                    int gx = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
+                    int gy = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
+
+                    int color = ((gx + gy) % 2) ? LIGHT_GREEN : DARK_GREEN;
+
+                    plot_pixel_both_buffers(px, py, color);
+                }
+            }
+            else
+            {
+                for (int dx = -HALF_BODY_WIDTH; dx <= HALF_BODY_WIDTH; dx++)
+                {
+                    int px = erase_x + dx;
+                    int py = erase_y;
+
+                    int gx = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
+                    int gy = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
+
+                    int color = ((gx + gy) % 2) ? LIGHT_GREEN : DARK_GREEN;
+
+                    plot_pixel_both_buffers(px, py, color);
+                }
+            }
+
+            tail_pixel.x += tail_dx;
+            tail_pixel.y += tail_dy;
         }
 
         wait_for_sync();
     }
 
-    memcpy(last_snake, snake_body, sizeof(last_snake));
-    snake_length = length;
+    // ---------- save snake ----------
+    memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
 }
