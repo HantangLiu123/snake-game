@@ -19,17 +19,6 @@ short int Buffer2[240][512];
 static Coordinate last_snake[SNAKE_MAX_LENGTH];
 static Coordinate snake_critical_points[SNAKE_MAX_LENGTH];
 
-static Coordinate head_pixel;
-static Coordinate tail_pixel;
-
-static int head_px_dx;
-static int head_px_dy;
-
-static int tail_px_dx;
-static int tail_px_dy;
-
-static int snake_length;
-
 static void swap(int *a, int *b)
 {
     int temp = *a;
