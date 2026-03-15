@@ -2,6 +2,7 @@
 #include "game.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LIGHT_GREEN 0x07e0
 #define DARK_GREEN 0x6a0
@@ -125,14 +126,14 @@ void draw_whole_grid()
 static void draw_hline(int x1, int x2, int y, short int color)
 {
     for (int x = x1; x <= x2; x++)
-        plot_pixel(x, y, color);
+        plot_pixel_both_buffers(x, y, color);
 }
 
 // draw a vertical line
 static void draw_vline(int x, int y1, int y2, short int color)
 {
     for (int y = y1; y <= y2; y++)
-        plot_pixel(x, y, color);
+        plot_pixel_both_buffers(x, y, color);
 }
 
 // draw a part of the snake body
@@ -207,6 +208,16 @@ void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_po
     // indication of stop
     if (out_index < SNAKE_MAX_LENGTH)
         output_points[out_index] = (Coordinate){-1, -1};
+}
+
+static void erase_snake_body(int px, int py)
+{
+    int gx = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
+    int gy = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
+
+    int color = ((gx + gy) % 2) ? LIGHT_GREEN : DARK_GREEN;
+
+    plot_pixel_both_buffers(px, py, color);
 }
 
 // update the snake from its last position to its current position.
@@ -293,13 +304,17 @@ void update_snake(const Coordinate *snake_body)
                     int px = erase_x;
                     int py = erase_y + dy;
 
-                    int gx = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
-                    int gy = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
-
-                    int color = ((gx + gy) % 2) ? LIGHT_GREEN : DARK_GREEN;
-
-                    plot_pixel_both_buffers(px, py, color);
+                    erase_snake_body(px, py);
+                    if (tail_dx > 0)
+                    {
+                        erase_snake_body(px - 1, py);
+                    }
+                    else
+                    {
+                        erase_snake_body(px + 1, py);
+                    }
                 }
+                erase_snake_body(erase_x, erase_y + HALF_BODY_WIDTH);
             }
             else
             {
@@ -308,12 +323,15 @@ void update_snake(const Coordinate *snake_body)
                     int px = erase_x + dx;
                     int py = erase_y;
 
-                    int gx = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
-                    int gy = (py - GRID_BASE_Y + HALF_GRID) / GRID_SIZE;
-
-                    int color = ((gx + gy) % 2) ? LIGHT_GREEN : DARK_GREEN;
-
-                    plot_pixel_both_buffers(px, py, color);
+                    erase_snake_body(px, py);
+                    if (tail_dy > 0)
+                    {
+                        erase_snake_body(px, py - 1);
+                    }
+                    else
+                    {
+                        erase_snake_body(px, py + 1);
+                    }
                 }
             }
 
