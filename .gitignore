@@ -3,3 +3,4 @@
 *.o
 *.elf
 *.ini
+*.DS_Store
