@@ -384,18 +384,18 @@ void draw_apple(int game_x, int game_y)
     {
         for (int dy = -4; dy <= 4; dy++)
         {
-            // 做一个“圆角方块”
-            if (dx * dx + dy * dy <= 16) // 半径约4
+            // a circle with radius of 4
+            if (dx * dx + dy * dy <= 16)
             {
                 plot_pixel_both_buffers(c.x + dx, c.y + dy, RED);
             }
         }
     }
 
-    // 🍃 画一个小叶子（增加辨识度）
+    // leaf
     plot_pixel_both_buffers(c.x + 1, c.y - 5, LEAF_GREEN);
     plot_pixel_both_buffers(c.x + 2, c.y - 5, LEAF_GREEN);
 
-    // ✨ 高光（看起来更像苹果）
+    // highlight
     plot_pixel_both_buffers(c.x - 2, c.y - 2, DARK_RED);
 }
