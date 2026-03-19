@@ -1,8 +1,8 @@
 INSTALL	:= C:/intelFPGA/QUARTUS_Lite_V23.1
 
 MAIN	:= main.c
-HDRS	:= address_map.h game.h render.h
-SRCS	:= $(MAIN) render.c
+HDRS	:= address_map.h game.h render.h apple.h
+SRCS	:= $(MAIN) render.c apple.c
 
 SHELL	:= cmd.exe
 
