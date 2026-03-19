@@ -6,6 +6,9 @@
 
 #define LIGHT_GREEN 0x07e0
 #define DARK_GREEN 0x6a0
+#define LEAF_GREEN 0x640
+#define RED 0xf800
+#define DARK_RED 0xc000
 #define BLUE 0x000f
 #define GRID_BASE_X 10
 #define GRID_BASE_Y 15
@@ -367,4 +370,28 @@ void update_snake(const Coordinate *snake_body)
 
     // save the current position to last position
     memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
+}
+
+void draw_apple(int game_x, int game_y)
+{
+    Coordinate c = game_to_grid_center(game_x, game_y);
+
+    for (int dx = -4; dx <= 4; dx++)
+    {
+        for (int dy = -4; dy <= 4; dy++)
+        {
+            // 做一个“圆角方块”
+            if (dx * dx + dy * dy <= 16) // 半径约4
+            {
+                plot_pixel_both_buffers(c.x + dx, c.y + dy, RED);
+            }
+        }
+    }
+
+    // 🍃 画一个小叶子（增加辨识度）
+    plot_pixel_both_buffers(c.x + 1, c.y - 5, LEAF_GREEN);
+    plot_pixel_both_buffers(c.x + 2, c.y - 5, LEAF_GREEN);
+
+    // ✨ 高光（看起来更像苹果）
+    plot_pixel_both_buffers(c.x - 2, c.y - 2, DARK_RED);
 }

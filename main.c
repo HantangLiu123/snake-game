@@ -64,6 +64,7 @@ int main(void)
     init_snake();
 
     init_test_snake();
+    draw_apple(10, 3);
 
     while (1)
     {
