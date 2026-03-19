@@ -27,7 +27,7 @@ void step_snake_test()
     int miny = 2;
     int maxy = 10;
 
-    // ---- 控制转向 ----
+    // setting a rectangle for snake to move in the test
     if (dir == 0 && head.x == maxx)
         dir = 1;
     if (dir == 1 && head.y == maxy)
@@ -48,7 +48,7 @@ void step_snake_test()
     if (dir == 3)
         new_head.y--;
 
-    // ---- 身体后移 ----
+    // update the body (moving one grid in the direction)
     for (int i = TEST_SNAKE_LEN - 1; i > 0; i--)
         snake[i] = snake[i - 1];
 
