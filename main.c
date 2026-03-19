@@ -1,4 +1,5 @@
 #include "render.h"
+#include "apple.h"
 
 #define TEST_SNAKE_LEN 5
 
@@ -62,6 +63,7 @@ int main(void)
     draw_whole_grid();
 
     init_snake();
+    play_apple_sound();
 
     init_test_snake();
     draw_apple(10, 3);
