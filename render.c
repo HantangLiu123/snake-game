@@ -230,14 +230,14 @@ static void draw_head(Coordinate head_pixel, bool is_horizontal)
     if (is_horizontal)
     {
         // horizontally -> left right means up down
-        plot_pixel(head_pixel.x, head_pixel.y - eye_offset_side, 0);
-        plot_pixel(head_pixel.x, head_pixel.y + eye_offset_side, 0);
+        plot_pixel(head_pixel.x, head_pixel.y - eye_offset_side, 0xffff);
+        plot_pixel(head_pixel.x, head_pixel.y + eye_offset_side, 0xffff);
     }
     else
     {
         // vertically -> left right means left right
-        plot_pixel(head_pixel.x - eye_offset_side, head_pixel.y, 0);
-        plot_pixel(head_pixel.x + eye_offset_side, head_pixel.y, 0);
+        plot_pixel(head_pixel.x - eye_offset_side, head_pixel.y, 0xffff);
+        plot_pixel(head_pixel.x + eye_offset_side, head_pixel.y, 0xffff);
     }
 }
 
@@ -274,6 +274,10 @@ void update_snake(const Coordinate *snake_body)
 
             draw_body_part(a.x, a.y, b.x, b.y);
         }
+
+        bool is_horizontal = ((snake_critical_points[0].x - snake_critical_points[1].x) != 0);
+        Coordinate head_coord = game_to_grid_center(snake_critical_points[0].x, snake_critical_points[0].y);
+        draw_head(snake_body[0], is_horizontal);
 
         wait_for_sync();
 
