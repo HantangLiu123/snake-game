@@ -277,7 +277,7 @@ void update_snake(const Coordinate *snake_body)
 
         bool is_horizontal = ((snake_critical_points[0].x - snake_critical_points[1].x) != 0);
         Coordinate head_coord = game_to_grid_center(snake_critical_points[0].x, snake_critical_points[0].y);
-        draw_head(snake_body[0], is_horizontal);
+        draw_head(head_coord, is_horizontal);
 
         wait_for_sync();
 
