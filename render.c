@@ -210,6 +210,34 @@ void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_po
         output_points[out_index] = (Coordinate){-1, -1};
 }
 
+static void draw_head(Coordinate head_pixel, bool is_horizontal)
+{
+    // draw head
+    for (int dx = -HALF_BODY_WIDTH; dx <= HALF_BODY_WIDTH; dx++)
+    {
+        for (int dy = -HALF_BODY_WIDTH; dy <= HALF_BODY_WIDTH; dy++)
+        {
+            plot_pixel(head_pixel.x + dx, head_pixel.y + dy, BLUE);
+        }
+    }
+
+    // draw eyes
+    int eye_offset_side = 2; // left and right offset
+
+    if (is_horizontal)
+    {
+        // horizontally -> left right means up down
+        plot_pixel(head_pixel.x, head_pixel.y - eye_offset_side, 0);
+        plot_pixel(head_pixel.x, head_pixel.y + eye_offset_side, 0);
+    }
+    else
+    {
+        // vertically -> left right means left right
+        plot_pixel(head_pixel.x - eye_offset_side, head_pixel.y, 0);
+        plot_pixel(head_pixel.x + eye_offset_side, head_pixel.y, 0);
+    }
+}
+
 static void erase_snake_body(int px, int py)
 {
     int gx = (px - GRID_BASE_X + HALF_GRID) / GRID_SIZE;
@@ -283,13 +311,8 @@ void update_snake(const Coordinate *snake_body)
         head_pixel.x += head_dx;
         head_pixel.y += head_dy;
 
-        for (int dx = -HALF_BODY_WIDTH; dx <= HALF_BODY_WIDTH; dx++)
-        {
-            for (int dy = -HALF_BODY_WIDTH; dy <= HALF_BODY_WIDTH; dy++)
-            {
-                plot_pixel(head_pixel.x + dx, head_pixel.y + dy, BLUE);
-            }
-        }
+        bool is_horizontal = (head_dx != 0);
+        draw_head(head_pixel, is_horizontal);
 
         // erase tail gradually
         if (!grew)
