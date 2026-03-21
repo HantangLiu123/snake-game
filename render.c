@@ -399,3 +399,99 @@ void draw_apple(int game_x, int game_y)
     // highlight
     plot_pixel_both_buffers(c.x - 2, c.y - 2, DARK_RED);
 }
+
+static void draw_dead_eyes(Coordinate head_pixel, bool is_horizontal)
+{
+    int offset = 2;
+
+    if (is_horizontal)
+    {
+        // 两个眼睛上下
+        int x = head_pixel.x;
+
+        // 上眼
+        plot_pixel(x - 1, head_pixel.y - offset - 1, 0xffff);
+        plot_pixel(x + 1, head_pixel.y - offset + 1, 0xffff);
+        plot_pixel(x - 1, head_pixel.y - offset + 1, 0xffff);
+        plot_pixel(x + 1, head_pixel.y - offset - 1, 0xffff);
+
+        // 下眼
+        plot_pixel(x - 1, head_pixel.y + offset - 1, 0xffff);
+        plot_pixel(x + 1, head_pixel.y + offset + 1, 0xffff);
+        plot_pixel(x - 1, head_pixel.y + offset + 1, 0xffff);
+        plot_pixel(x + 1, head_pixel.y + offset - 1, 0xffff);
+    }
+    else
+    {
+        // 左右眼
+        int y = head_pixel.y;
+
+        // 左眼
+        plot_pixel(head_pixel.x - offset - 1, y - 1, 0xffff);
+        plot_pixel(head_pixel.x - offset + 1, y + 1, 0xffff);
+        plot_pixel(head_pixel.x - offset - 1, y + 1, 0xffff);
+        plot_pixel(head_pixel.x - offset + 1, y - 1, 0xffff);
+
+        // 右眼
+        plot_pixel(head_pixel.x + offset - 1, y - 1, 0xffff);
+        plot_pixel(head_pixel.x + offset + 1, y + 1, 0xffff);
+        plot_pixel(head_pixel.x + offset - 1, y + 1, 0xffff);
+        plot_pixel(head_pixel.x + offset + 1, y - 1, 0xffff);
+    }
+}
+
+void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
+{
+    // 当前长度
+    int length = 0;
+    while (snake_body[length].x != -1)
+        length++;
+
+    // 上一帧长度
+    int last_length = 0;
+    while (last_snake[last_length].x != -1)
+        last_length++;
+
+    // head movement
+    Coordinate head_now = snake_body[0];
+    Coordinate head_last = last_snake[0];
+
+    int head_dx = head_now.x - head_last.x;
+    int head_dy = head_now.y - head_last.y;
+
+    Coordinate head_pixel = game_to_grid_center(head_last.x, head_last.y);
+
+    // ✅ 根据碰撞类型决定步数
+    int steps;
+    if (hit_on_wall)
+    {
+        steps = HALF_GRID - HALF_BODY_WIDTH; // ≈ 3
+    }
+    else
+    {
+        steps = GRID_SIZE - 2 * HALF_BODY_WIDTH; // ≈ 6~7
+    }
+
+    bool is_horizontal = (head_dx != 0);
+
+    // 动画
+    for (int step = 0; step < steps; step++)
+    {
+        head_pixel.x += head_dx;
+        head_pixel.y += head_dy;
+
+        draw_head(head_pixel, is_horizontal);
+
+        wait_for_sync();
+    }
+
+    // ✅ 最终停在碰撞点
+    draw_head(head_pixel, is_horizontal);
+
+    // ✅ 画叉眼（覆盖）
+    draw_dead_eyes(head_pixel, is_horizontal);
+
+    wait_for_sync();
+
+    memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
+}

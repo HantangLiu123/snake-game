@@ -2,11 +2,13 @@
 #define RENDER_H
 
 #include "game.h"
+#include "stdbool.h"
 
 void init_vga();
 void draw_whole_grid();
 void update_snake(const Coordinate *snake_body);
 void init_snake();
 void draw_apple(int game_x, int game_y);
+void update_snake_death(const Coordinate *snake_body, bool hit_on_wall);
 
 #endif
