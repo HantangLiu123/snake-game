@@ -440,6 +440,67 @@ static void draw_dead_eyes(Coordinate head_pixel, bool is_horizontal)
     }
 }
 
+static void erase_cell(Coordinate game_coord)
+{
+    Coordinate c = game_to_grid_center(game_coord.x, game_coord.y);
+
+    for (int dx = -HALF_GRID; dx <= HALF_GRID; dx++)
+    {
+        for (int dy = -HALF_GRID; dy <= HALF_GRID; dy++)
+        {
+            int px = c.x + dx;
+            int py = c.y + dy;
+
+            int gx = game_coord.x;
+            int gy = game_coord.y;
+
+            int color = ((gx + gy) % 2) ? LIGHT_GREEN : DARK_GREEN;
+
+            plot_pixel_both_buffers(px, py, color);
+        }
+    }
+}
+
+static void flash_snake_death(const Coordinate *death_snake, int length, Coordinate head_pixel, bool is_horizontal)
+{
+    for (int k = 0; k < 2; k++)
+    {
+        // 1️⃣ 擦掉整条蛇（按格子）
+        for (int i = 0; i < length; i++)
+        {
+            erase_cell(death_snake[i]);
+        }
+        wait_for_sync();
+
+        // 2️⃣ 重画 body（用 last_snake 结构）
+        extract_snake_keypoints(death_snake, snake_critical_points);
+
+        for (int i = 0; snake_critical_points[i + 1].x != -1; i++)
+        {
+            Coordinate a = game_to_grid_center(snake_critical_points[i].x, snake_critical_points[i].y);
+
+            Coordinate b = game_to_grid_center(snake_critical_points[i + 1].x, snake_critical_points[i + 1].y);
+
+            draw_body_part(a.x, a.y, b.x, b.y);
+        }
+
+        // 3️⃣ ❗关键：head 用 pixel 精确位置
+        draw_head(head_pixel, is_horizontal);
+        draw_dead_eyes(head_pixel, is_horizontal);
+
+        wait_for_sync();
+    }
+}
+
+static void dissolve_snake(const Coordinate *last_snake, int length)
+{
+    for (int i = length - 1; i >= 0; i--)
+    {
+        erase_cell(last_snake[i]);
+        wait_for_sync();
+    }
+}
+
 void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
 {
     // 当前长度
@@ -492,6 +553,12 @@ void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
     draw_dead_eyes(head_pixel, is_horizontal);
 
     wait_for_sync();
+
+    // ✨ 1. 闪烁
+    flash_snake_death(last_snake, length, head_pixel, is_horizontal);
+
+    // ✨ 2. 逐段消失
+    dissolve_snake(last_snake, length);
 
     memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
 }
