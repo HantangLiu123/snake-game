@@ -11,4 +11,9 @@ void init_snake();
 void draw_apple(int game_x, int game_y);
 void update_snake_death(const Coordinate *snake_body, bool hit_on_wall);
 
+void draw_apple_side_bar();
+void clear_apple_side_bar();
+void update_digit(int num);
+void clear_digit();
+
 #endif

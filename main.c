@@ -1,5 +1,5 @@
-#include "render.h"
 #include "apple.h"
+#include "render.h"
 
 #define TEST_SNAKE_LEN 5
 
@@ -67,11 +67,21 @@ int main(void)
 
     init_test_snake();
     draw_apple(10, 3);
+    draw_apple_side_bar();
+    int num = 0;
+    update_digit(num);
+    int i = 0;
 
     while (1)
     {
         update_snake(snake);
 
         step_snake_test();
+        if (i == 5)
+        {
+            num++;
+            update_digit(num);
+        }
+        i = (i + 1) % 10;
     }
 }
