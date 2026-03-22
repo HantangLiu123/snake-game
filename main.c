@@ -71,6 +71,8 @@ int main(void)
     int num = 0;
     update_digit(num);
     int i = 0;
+    int status = 0;
+    update_status(status);
 
     while (1)
     {
@@ -81,6 +83,8 @@ int main(void)
         {
             num++;
             update_digit(num);
+            status = (status + 1) % 3;
+            update_status(status);
         }
         i = (i + 1) % 10;
     }

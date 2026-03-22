@@ -2,7 +2,7 @@
 #define RENDER_H
 
 #include "game.h"
-#include "stdbool.h"
+#include <stdbool.h>
 
 void init_vga();
 void draw_whole_grid();
@@ -15,5 +15,14 @@ void draw_apple_side_bar();
 void clear_apple_side_bar();
 void update_digit(int num);
 void clear_digit();
+
+typedef enum
+{
+    STATUS_END = 0,
+    STATUS_RUN,
+    STATUS_PAUSE
+} GameStatus;
+
+void update_status(GameStatus status);
 
 #endif

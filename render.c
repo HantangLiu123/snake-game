@@ -1,3 +1,4 @@
+#include "render.h"
 #include "address_map.h"
 #include "game.h"
 #include <stdbool.h>
@@ -8,8 +9,10 @@
 #define LIGHT_GREEN 0x07e0
 #define DARK_GREEN 0x6a0
 #define LEAF_GREEN 0x640
+#define GREEN 0x6a0
 #define RED 0xf800
 #define DARK_RED 0xc000
+#define YELLOW 0xFFE0
 #define BLUE 0x000f
 #define GRID_BASE_X 10
 #define GRID_BASE_Y 15
@@ -25,6 +28,12 @@
 
 #define BG_COLOR 0x0000    // 黑色背景（按你实际改）
 #define DIGIT_COLOR 0xFFFF // 白色
+
+#define STATUS_ICON_X 270
+#define STATUS_ICON_Y 100
+
+#define STATUS_TEXT_X 265
+#define STATUS_TEXT_Y 140
 
 volatile int pixel_buffer_start; // global variable
 short int Buffer1[240][512];     // 240 rows, 512 (320 + padding) columns
@@ -848,4 +857,278 @@ void update_digit(int num)
         draw_digit(start_x + offset, start_y, d);
         offset += DIGIT_W + DIGIT_SPACING;
     }
+}
+
+static void draw_run_icon(int cx, int cy)
+{
+    int height = 24;
+
+    for (int i = 0; i < height; i++)
+    {
+        int half = height / 2;
+        int width;
+
+        if (i < half)
+            width = i; // 上半部分变宽
+        else
+            width = height - i; // 下半部分变窄
+
+        for (int j = 0; j < width; j++)
+        {
+            plot_pixel_both_buffers(cx + j, cy + i, GREEN);
+        }
+    }
+}
+
+static void draw_pause_icon(int x, int y)
+{
+    for (int i = 0; i < 24; i++)
+    {
+        for (int j = 0; j < 6; j++)
+        {
+            plot_pixel_both_buffers(x + j, y + i, YELLOW);
+            plot_pixel_both_buffers(x + j + 12, y + i, YELLOW);
+        }
+    }
+}
+
+static void draw_end_icon(int x, int y)
+{
+    for (int i = 0; i < 20; i++)
+    {
+        for (int j = 0; j < 20; j++)
+        {
+            plot_pixel_both_buffers(x + j, y + i, RED);
+        }
+    }
+}
+
+#define TEXT_W 8
+#define TEXT_H 12
+#define TEXT_SPACING 2
+
+// 每个字母 8x12
+const char font[][TEXT_H][TEXT_W] = {
+    // R (0)
+    {{1, 1, 1, 1, 1, 0, 0, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 1, 1, 1, 0, 0, 0},
+     {1, 1, 0, 1, 0, 0, 0, 0},
+     {1, 1, 0, 0, 1, 0, 0, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 0, 0, 0, 1, 0, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 0, 1, 0},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // U (1)
+    {{1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {0, 1, 1, 0, 0, 1, 1, 0},
+     {0, 0, 1, 1, 1, 1, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // N (2)
+    {{1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 1, 0, 0, 0, 1, 1},
+     {1, 1, 1, 1, 0, 0, 1, 1},
+     {1, 1, 0, 1, 1, 0, 1, 1},
+     {1, 1, 0, 0, 1, 1, 1, 1},
+     {1, 1, 0, 0, 0, 1, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // P (3)
+    {{1, 1, 1, 1, 1, 0, 0, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 1, 1, 1, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // A (4)
+    {{0, 0, 1, 1, 1, 1, 0, 0},
+     {0, 1, 1, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 1, 1, 1, 1, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // S (5)
+    {{0, 1, 1, 1, 1, 1, 1, 0},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {0, 1, 1, 1, 1, 1, 0, 0},
+     {0, 0, 0, 0, 0, 1, 1, 0},
+     {0, 0, 0, 0, 0, 0, 1, 1},
+     {0, 0, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {1, 1, 0, 0, 0, 0, 1, 1},
+     {0, 1, 1, 1, 1, 1, 1, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // E (6)
+    {{1, 1, 1, 1, 1, 1, 1, 1},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 1, 1, 1, 1, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 0, 0, 0, 0, 0, 0},
+     {1, 1, 1, 1, 1, 1, 1, 1},
+     {0, 0, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0}},
+
+    // D (7)
+    {{1, 1, 1, 1, 1, 0, 0, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 0, 1, 1, 0},
+     {1, 1, 0, 0, 1, 1, 0, 0},
+     {1, 1, 1, 1, 1, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0}}};
+
+static void draw_char(int x, int y, int idx, short color)
+{
+    for (int i = 0; i < TEXT_H; i++)
+    {
+        for (int j = 0; j < TEXT_W; j++)
+        {
+            if (font[idx][i][j])
+            {
+                plot_pixel_both_buffers(x + j, y + i, color);
+            }
+        }
+    }
+}
+
+static void draw_text_RUN(int x, int y, short color)
+{
+    int offset = 0;
+
+    draw_char(x + offset, y, 0, color); // R
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 1, color); // U
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 2, color); // N
+}
+
+static void draw_text_PAUSE(int x, int y, short color)
+{
+    int offset = 0;
+
+    draw_char(x + offset, y, 3, color); // P
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 4, color); // A
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 1, color); // U
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 5, color); // S
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 6, color); // E
+}
+
+static void draw_text_END(int x, int y, short color)
+{
+    int offset = 0;
+
+    draw_char(x + offset, y, 6, color); // E
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 2, color); // N
+    offset += TEXT_W + TEXT_SPACING;
+
+    draw_char(x + offset, y, 7, color); // D
+}
+
+static void draw_status_text(GameStatus status)
+{
+    switch (status)
+    {
+    case STATUS_RUN:
+        draw_text_RUN(STATUS_TEXT_X, STATUS_TEXT_Y, GREEN);
+        break;
+    case STATUS_PAUSE:
+        draw_text_PAUSE(STATUS_TEXT_X, STATUS_TEXT_Y, YELLOW);
+        break;
+    case STATUS_END:
+        draw_text_END(STATUS_TEXT_X, STATUS_TEXT_Y, RED);
+        break;
+    }
+}
+
+#define STATUS_W 60
+#define STATUS_H 80
+
+static void clear_status_area()
+{
+    for (int i = 0; i < STATUS_H; i++)
+    {
+        for (int j = 0; j < STATUS_W; j++)
+        {
+            plot_pixel_both_buffers(SIDEBAR_X + j, STATUS_ICON_Y + i, BG_COLOR);
+        }
+    }
+}
+
+static void draw_status_icon(GameStatus status)
+{
+    switch (status)
+    {
+    case STATUS_RUN:
+        draw_run_icon(STATUS_ICON_X, STATUS_ICON_Y);
+        break;
+    case STATUS_PAUSE:
+        draw_pause_icon(STATUS_ICON_X, STATUS_ICON_Y);
+        break;
+    case STATUS_END:
+        draw_end_icon(STATUS_ICON_X, STATUS_ICON_Y);
+        break;
+    }
+}
+
+void update_status(GameStatus status)
+{
+    clear_status_area();
+    draw_status_icon(status);
+    draw_status_text(status);
 }
