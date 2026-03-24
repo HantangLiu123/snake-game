@@ -1,4 +1,4 @@
-#include "apple.h"
+#include "sound.h"
 #include "render.h"
 
 #define TEST_SNAKE_LEN 5
