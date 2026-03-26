@@ -99,9 +99,10 @@ int main(void)
 
     while (1)
     {
+        step_snake_test();
         update_snake(snake);
 
-        step_snake_test();
+        
         if (i == 5)
         {
             num++;
@@ -110,5 +111,7 @@ int main(void)
             update_status(status);
         }
         i = (i + 1) % 10;
+        
+        for (volatile int delay = 0; delay < 200000; delay++) {}
     }
 }
