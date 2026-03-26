@@ -1,6 +1,7 @@
 #include "render.h"
 #include <stdbool.h>
 #include <string.h>
+#include "sound.h"
 
 void test_death_hit_wall()
 {
@@ -36,7 +37,7 @@ void test_death_hit_wall()
                                                  {15, 7},
                                                  {14, 7},
                                                  {-1, -1}};
-
+    play_gameover_sound();
     update_snake_death(next_snake_3, true);
 }
 
@@ -54,7 +55,7 @@ void test_death_hit_self()
     // ✅ 下一步：正常向“上”走，但撞到身体 (8,6)
     Coordinate next_snake[SNAKE_MAX_LENGTH] = {{8, 6}, // head 向上走 → 撞到身体
                                                {8, 5}, {7, 5}, {6, 5}, {6, 6}, {6, 7}, {7, 7}, {8, 7}, {-1, -1}};
-
+    play_gameover_sound();
     update_snake_death(next_snake, false);
 }
 

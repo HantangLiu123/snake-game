@@ -1,5 +1,5 @@
-#include "ps2.h"              // 引入 ps2.h，里面有方向常量、函数声明、全局变量声明
-#include "address_map.h"      // 引入硬件地址定义，比如 PS2_BASE
+#include "ps2.h"              
+#include "address_map.h"      
 
 volatile int snake_dir = DIR_RIGHT;   // 当前蛇真正前进的方向，初始为向右
 volatile int pending_turn = 0;        // 待处理的转向：-1 表示左转，+1 表示右转，0 表示不转
