@@ -1720,10 +1720,10 @@ void play_apple_sound() {
       }
     }
 
-    /* 两个 byte 还原成一个 16-bit sample */
+    // two bytes to a 16-bit sample
     int16_t s = (int16_t)(apple[pos] | (apple[pos + 1] << 8));
 
-    /* 扩成 32-bit 输出到左右声道 */
+    // to 32-bit
     int32_t out = ((int32_t)s) << 16;
 
     audio_ptr[AUDIO_LEFTDATA] = out;

@@ -26,8 +26,8 @@
 #define DIGIT_SPACING 2
 #define APPLE_DIGIT_GAP 6
 
-#define BG_COLOR 0x0000    // 黑色背景（按你实际改）
-#define DIGIT_COLOR 0xFFFF // 白色
+#define BG_COLOR 0x0000
+#define DIGIT_COLOR 0xFFFF
 
 #define STATUS_ICON_X 270
 #define STATUS_ICON_Y 100
@@ -484,14 +484,14 @@ static void flash_snake_death(const Coordinate *death_snake, int length, Coordin
 {
     for (int k = 0; k < 2; k++)
     {
-        // 1️⃣ 擦掉整条蛇（按格子）
+        // erase the whole snake
         for (int i = 0; i < length; i++)
         {
             erase_cell(death_snake[i]);
         }
         wait_for_sync();
 
-        // 2️⃣ 重画 body（用 last_snake 结构）
+        // redraw the snake
         extract_snake_keypoints(death_snake, snake_critical_points);
 
         for (int i = 0; snake_critical_points[i + 1].x != -1; i++)
@@ -503,7 +503,7 @@ static void flash_snake_death(const Coordinate *death_snake, int length, Coordin
             draw_body_part(a.x, a.y, b.x, b.y);
         }
 
-        // 3️⃣ ❗关键：head 用 pixel 精确位置
+        // draw the head using the head pixel at its death
         draw_head(head_pixel, is_horizontal);
         draw_dead_eyes(head_pixel, is_horizontal);
 
@@ -522,12 +522,12 @@ static void dissolve_snake(const Coordinate *last_snake, int length)
 
 void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
 {
-    // 当前长度
+    // current length
     int length = 0;
     while (snake_body[length].x != -1)
         length++;
 
-    // 上一帧长度
+    // length of last tick
     int last_length = 0;
     while (last_snake[last_length].x != -1)
         last_length++;
@@ -541,7 +541,9 @@ void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
 
     Coordinate head_pixel = game_to_grid_center(head_last.x, head_last.y);
 
-    // ✅ 根据碰撞类型决定步数
+    // set steps according to the thing the snake hit
+    // hits wall -> 3
+    // hits itself -> 7
     int steps;
     if (hit_on_wall)
     {
@@ -549,12 +551,12 @@ void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
     }
     else
     {
-        steps = GRID_SIZE - 2 * HALF_BODY_WIDTH; // ≈ 6~7
+        steps = GRID_SIZE - 2 * HALF_BODY_WIDTH; // 7
     }
 
     bool is_horizontal = (head_dx != 0);
 
-    // 动画
+    // animation towards death position
     for (int step = 0; step < steps; step++)
     {
         head_pixel.x += head_dx;
@@ -565,18 +567,15 @@ void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
         wait_for_sync();
     }
 
-    // ✅ 最终停在碰撞点
+    // draw the head at death position
     draw_head(head_pixel, is_horizontal);
 
-    // ✅ 画叉眼（覆盖）
     draw_dead_eyes(head_pixel, is_horizontal);
 
     wait_for_sync();
 
-    // ✨ 1. 闪烁
     flash_snake_death(last_snake, length, head_pixel, is_horizontal);
 
-    // ✨ 2. 逐段消失
     dissolve_snake(last_snake, length);
 
     memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
@@ -619,10 +618,9 @@ void draw_apple_side_bar()
             int g = (color >> 5) & 0x3F;
             int b = color & 0x1F;
 
-            // 亮度（简单近似）
             int brightness = r + g + b;
 
-            // 判断：亮 + 接近灰白
+            // if bright, and the color is close to white or light grey
             if (!(brightness > 80 && abs(r - b) < 5 && abs(r - g / 2) < 5))
             {
                 plot_pixel_both_buffers(SIDEBAR_X + j, SIDEBAR_Y + i, color);
@@ -838,11 +836,11 @@ void clear_digit()
 
 void update_digit(int num)
 {
-    // 1. 先清掉旧的
+    // clear old digits
     clear_digit();
 
-    // 2. 转字符串
-    char buf[4]; // 最大999
+    // converts num to string
+    char buf[4];
     sprintf(buf, "%d", num);
 
     int start_x = SIDEBAR_X + APPLE_WIDTH + APPLE_DIGIT_GAP;
@@ -850,7 +848,7 @@ void update_digit(int num)
 
     int offset = 0;
 
-    // 3. 逐位画
+    // draw the digit one by one
     for (int i = 0; buf[i] != '\0'; i++)
     {
         int d = buf[i] - '0';
@@ -859,6 +857,7 @@ void update_digit(int num)
     }
 }
 
+// draw the run icon
 static void draw_run_icon(int cx, int cy)
 {
     int height = 24;
@@ -869,9 +868,9 @@ static void draw_run_icon(int cx, int cy)
         int width;
 
         if (i < half)
-            width = i; // 上半部分变宽
+            width = i;
         else
-            width = height - i; // 下半部分变窄
+            width = height - i;
 
         for (int j = 0; j < width; j++)
         {
@@ -880,6 +879,7 @@ static void draw_run_icon(int cx, int cy)
     }
 }
 
+// draw the pause icon
 static void draw_pause_icon(int x, int y)
 {
     for (int i = 0; i < 24; i++)
@@ -892,6 +892,7 @@ static void draw_pause_icon(int x, int y)
     }
 }
 
+// draw the end icon
 static void draw_end_icon(int x, int y)
 {
     for (int i = 0; i < 20; i++)
@@ -907,7 +908,7 @@ static void draw_end_icon(int x, int y)
 #define TEXT_H 12
 #define TEXT_SPACING 2
 
-// 每个字母 8x12
+// all needed characters in this game
 const char font[][TEXT_H][TEXT_W] = {
     // R (0)
     {{1, 1, 1, 1, 1, 0, 0, 0},
