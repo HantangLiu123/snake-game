@@ -1,5 +1,6 @@
 #include "sound.h"
 #include "render.h"
+#include "ps2.h"
 
 #define TEST_SNAKE_LEN 5
 
@@ -17,7 +18,7 @@ void init_test_snake()
     snake[4] = (Coordinate){0, 0};
 }
 
-void step_snake_test()
+/*void step_snake_test()
 {
     static int dir = 0;
 
@@ -54,6 +55,28 @@ void step_snake_test()
         snake[i] = snake[i - 1];
 
     snake[0] = new_head;
+}*/
+void step_snake_test()
+{
+    Coordinate head = snake[0];
+
+    ps2_apply_turn();
+
+    Coordinate new_head = head;
+
+    if (snake_dir == DIR_RIGHT)
+        new_head.x++;
+    else if (snake_dir == DIR_DOWN)
+        new_head.y++;
+    else if (snake_dir == DIR_LEFT)
+        new_head.x--;
+    else if (snake_dir == DIR_UP)
+        new_head.y--;
+
+    for (int i = TEST_SNAKE_LEN - 1; i > 0; i--)
+        snake[i] = snake[i - 1];
+
+    snake[0] = new_head;
 }
 
 int main(void)
@@ -63,9 +86,9 @@ int main(void)
     draw_whole_grid();
 
     init_snake();
-    play_apple_sound();
-
     init_test_snake();
+    ps2_init();
+
     draw_apple(10, 3);
     draw_apple_side_bar();
     int num = 0;
