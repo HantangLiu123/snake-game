@@ -1,5 +1,6 @@
 #include "render.h"
 #include <stdbool.h>
+#include <string.h>
 
 void test_death_hit_wall()
 {
@@ -138,6 +139,7 @@ int main(void)
     draw_whole_grid();
 
     test_auto_self_collision();
+    test_death_hit_wall();
     while (1)
         ;
 }
