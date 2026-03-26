@@ -112,6 +112,6 @@ int main(void)
         }
         i = (i + 1) % 10;
         
-        //for (volatile int delay = 0; delay < 200000; delay++) {}
+        for (volatile int delay = 0; delay < 200000; delay++) {}
     }
 }

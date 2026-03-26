@@ -122,7 +122,9 @@ void test_auto_self_collision()
 
         if (hit_self)
         {
+            
             update_snake_death(next, false);
+            play_gameover_sound();
             break;
         }
         else
@@ -140,7 +142,6 @@ int main(void)
     draw_whole_grid();
 
     test_auto_self_collision();
-    test_death_hit_wall();
     while (1)
         ;
 }
