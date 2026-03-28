@@ -60,8 +60,6 @@ void step_snake_test()
 {
     Coordinate head = snake[0];
 
-    ps2_apply_turn();
-
     Coordinate new_head = head;
 
     if (snake_dir == DIR_RIGHT)
@@ -96,6 +94,7 @@ int main(void)
     int i = 0;
     int status = 0;
     update_status(status);
+    int game_running = 0;   // 0 = paused/not started, 1 = running
 
     while (1)
     {
