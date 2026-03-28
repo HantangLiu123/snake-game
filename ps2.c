@@ -1,92 +1,151 @@
-#include "ps2.h"              
-#include "address_map.h"     
+#include "ps2.h"
+#include "address_map.h"
 
-volatile int snake_dir = DIR_RIGHT;   // The current actual moving direction of the snake, initialized to right
-volatile int pending_turn = 0;        // Pending turn request: -1 = turn left, +1 = turn right, 0 = no turn
+volatile int snake_dir = DIR_RIGHT;   // Current actual snake direction
 
-static volatile int ps2_break = 0;    // Flag indicating whether F0 (break code prefix) was received
+static volatile int ps2_break = 0;    // Set to 1 after receiving F0
+static volatile InputCmd input_buf[INPUT_BUF_SIZE];   // Ring buffer for validated input commands
+static volatile int buf_head = 0;     // Write index
+static volatile int buf_tail = 0;     // Read index
 
-static void ps2_isr(void) {           // PS/2 interrupt service routine, used only inside this file
-    volatile int *PS2_ptr = (int *)PS2_BASE;   // Pointer to the PS/2 base address
-    int data;                         // Stores the 32-bit value read from the PS/2 port
-    unsigned char byte;               // Stores the actual 8-bit scan code from the keyboard
+// Push one validated command into the ring buffer
+static void push_input(InputCmd cmd) {
+    int next_head = (buf_head + 1) % INPUT_BUF_SIZE;
 
-    while (1) {                       // Keep reading until there is no more valid data in the FIFO
-        data = *PS2_ptr;              // Read one value from the PS/2 data register
+    // If buffer is full, drop the new command
+    if (next_head == buf_tail)
+        return;
+
+    input_buf[buf_head] = cmd;
+    buf_head = next_head;
+}
+
+// Pop one command from the ring buffer
+static InputCmd pop_input(void) {
+    InputCmd cmd;
+
+    if (buf_head == buf_tail)
+        return CMD_NONE;   // Buffer empty
+
+    cmd = input_buf[buf_tail];
+    buf_tail = (buf_tail + 1) % INPUT_BUF_SIZE;
+    return cmd;
+}
+
+// PS/2 device ISR: only validate and buffer keystrokes
+static void ps2_isr(void) {
+    volatile int *PS2_ptr = (int *)PS2_BASE;
+    int data;
+    unsigned char byte;
+
+    while (1) {
+        data = *PS2_ptr;
 
         // bit15 = RVALID
-        if ((data & 0x8000) == 0)     // If bit15 is 0, the current read is not valid
-            break;                    // Exit the loop because there is no more valid data
+        if ((data & 0x8000) == 0)
+            break;
 
-        byte = (unsigned char)(data & 0xFF);   // Extract the low 8 bits as the keyboard scan code
+        byte = (unsigned char)(data & 0xFF);
 
-        // F0 = break code prefix
-        if (byte == 0xF0) {           // If the byte is F0, it means a key release sequence starts here
-            ps2_break = 1;            // Set the break flag so the next byte will be ignored
-            continue;                 // Skip direction handling for this byte
+        // F0 means the next byte is a released-key code
+        if (byte == 0xF0) {
+            ps2_break = 1;
+            continue;
         }
 
-        // ignore released key code
-        if (ps2_break) {              // If the previous byte was F0
-            ps2_break = 0;            // Clear the break flag
-            continue;                 // Ignore this released key code
+        // Ignore released-key code
+        if (ps2_break) {
+            ps2_break = 0;
+            continue;
         }
 
-        // A = left turn, D = right turn
-        if (byte == 0x1C) {           // If the scan code is 0x1C, the key pressed is A
-            pending_turn = -1;        // Request a left turn for the next movement step
-        } else if (byte == 0x23) {    // If the scan code is 0x23, the key pressed is D
-            pending_turn = +1;        // Request a right turn for the next movement step
+        // Buffer only make-codes that matter to the game
+        if (byte == 0x1D) {          // W
+            push_input(CMD_UP);
+        } else if (byte == 0x1C) {   // A
+            push_input(CMD_LEFT);
+        } else if (byte == 0x1B) {   // S
+            push_input(CMD_DOWN);
+        } else if (byte == 0x23) {   // D
+            push_input(CMD_RIGHT);
+        } else if (byte == 0x29) {   // Space
+            push_input(CMD_SPACE);
         }
     }
 }
 
-void handler(void) {                  // Global interrupt handler called by the CPU on an interrupt
-    int mcause_value;                 // Stores the value of the mcause register
-    __asm__ volatile ("csrr %0, mcause" : "=r"(mcause_value));   // Read mcause to determine the interrupt source
+// Global trap handler
+void handler(void) {
+    int mcause_value;
+    __asm__ volatile ("csrr %0, mcause" : "=r"(mcause_value));
 
     // PS/2 IRQ 22 -> mcause 0x80000016
-    if (mcause_value == 0x80000016) { // If the interrupt came from the PS/2 port
-        ps2_isr();                    // Call the PS/2-specific interrupt service routine
+    if (mcause_value == 0x80000016) {
+        ps2_isr();
     }
 }
 
-void ps2_init(void) {                 // Initialize the PS/2 device and enable its interrupt
-    volatile int *PS2_ptr = (int *)PS2_BASE;   // Pointer to the PS/2 base address
-    int data;                         // Temporary variable used to clear old FIFO data
-    int mstatus_value = 0b1000;      // MIE bit in mstatus, used to enable global interrupts
-    int mtvec_value = (int)&handler; // Address of the interrupt handler
-    int mie_value;                    // Stores mie register contents for enabling the specific interrupt source
+// Initialize PS/2 device and enable its interrupt
+void ps2_init(void) {
+    volatile int *PS2_ptr = (int *)PS2_BASE;
+    int data;
+    int mstatus_value = 0b1000;
+    int mtvec_value = (int)&handler;
+    int mie_value;
 
-    // clear old bytes
-    while (1) {                       // Clear any old bytes left in the PS/2 FIFO
-        data = *PS2_ptr;              // Read one value from the PS/2 port
-        if ((data & 0x8000) == 0)     // If there is no valid data left
-            break;                    // Stop clearing
+    // Clear old bytes in PS/2 FIFO
+    while (1) {
+        data = *PS2_ptr;
+        if ((data & 0x8000) == 0)
+            break;
     }
 
-    // enable PS/2 receive interrupt at device
-    *(PS2_ptr + 1) = 0x1;             // Write 1 to the PS/2 control register to enable receive interrupt
+    // Enable PS/2 receive interrupt at device level
+    *(PS2_ptr + 1) = 0x1;
 
-    // set trap vector and enable IRQ 22
-    __asm__ volatile ("csrc mstatus, %0" :: "r"(mstatus_value)); // Clear MIE first to temporarily disable global interrupts
-    __asm__ volatile ("csrw mtvec, %0" :: "r"(mtvec_value));     // Set mtvec to the address of handler()
+    // Disable global interrupts first
+    __asm__ volatile ("csrc mstatus, %0" :: "r"(mstatus_value));
 
-    __asm__ volatile ("csrr %0, mie" : "=r"(mie_value));         // Read the current mie register
-    __asm__ volatile ("csrc mie, %0" :: "r"(mie_value));         // Clear currently enabled interrupt bits
+    // Set trap handler address
+    __asm__ volatile ("csrw mtvec, %0" :: "r"(mtvec_value));
 
-    mie_value = (1 << 22);              // Enable only IRQ 22, which corresponds to the PS/2 interrupt
-    __asm__ volatile ("csrs mie, %0" :: "r"(mie_value));         // Set IRQ 22 in mie
+    // Clear currently enabled interrupt bits
+    __asm__ volatile ("csrr %0, mie" : "=r"(mie_value));
+    __asm__ volatile ("csrc mie, %0" :: "r"(mie_value));
 
-    __asm__ volatile ("csrs mstatus, %0" :: "r"(mstatus_value)); // Re-enable global interrupts
+    // Enable only IRQ 22 (PS/2)
+    mie_value = (1 << 22);
+    __asm__ volatile ("csrs mie, %0" :: "r"(mie_value));
+
+    // Re-enable global interrupts
+    __asm__ volatile ("csrs mstatus, %0" :: "r"(mstatus_value));
 }
 
-void ps2_apply_turn(void) {           // Apply the pending turn before moving the snake one step
-    if (pending_turn == -1) {         // If the pending turn request is left
-        snake_dir = (snake_dir + 3) % 4;   // Rotate direction 90 degrees counterclockwise
-    } else if (pending_turn == +1) {  // If the pending turn request is right
-        snake_dir = (snake_dir + 1) % 4;   // Rotate direction 90 degrees clockwise
+// Consume at most one buffered command each game tick
+void ps2_apply_buffered_input(volatile int *game_running) {
+    InputCmd cmd = pop_input();
+
+    if (cmd == CMD_NONE)
+        return;
+
+    // Space toggles start/pause
+    if (cmd == CMD_SPACE) {
+        *game_running = !(*game_running);
+        return;
     }
 
-    pending_turn = 0;                 // Clear the turn request after applying it
+    // If moving horizontally, only W/S are valid
+    if (snake_dir == DIR_LEFT || snake_dir == DIR_RIGHT) {
+        if (cmd == CMD_UP)
+            snake_dir = DIR_UP;
+        else if (cmd == CMD_DOWN)
+            snake_dir = DIR_DOWN;
+    }
+    // If moving vertically, only A/D are valid
+    else if (snake_dir == DIR_UP || snake_dir == DIR_DOWN) {
+        if (cmd == CMD_LEFT)
+            snake_dir = DIR_LEFT;
+        else if (cmd == CMD_RIGHT)
+            snake_dir = DIR_RIGHT;
+    }
 }
