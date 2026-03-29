@@ -1,8 +1,8 @@
 INSTALL	:= C:/intelFPGA/QUARTUS_Lite_V23.1
 
-MAIN	:= death_tests.c
-HDRS	:= address_map.h game.h render.h sound.h
-SRCS	:= $(MAIN) render.c sound.c
+MAIN	:= main.c
+HDRS	:= address_map.h game.h render.h ps2.h sound.h
+SRCS	:= $(MAIN) render.c sound.c ps2.c sound,c
 
 SHELL	:= cmd.exe
 
