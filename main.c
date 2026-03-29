@@ -1,6 +1,7 @@
 #include "game.h"
 #include "ps2.h"
 #include "render.h"
+#include "sound.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -200,6 +201,7 @@ void game_tick()
         update_snake_death(snake, hit_wall);
         status = STATUS_END;
         update_status(STATUS_END);
+        play_gameover_sound();
         return;
     }
 
@@ -233,6 +235,7 @@ void game_tick()
         apples[apple_index] = apples[--apple_count];
 
         update_digit(snake_length - 3);
+        play_apple_sound();
     }
 
     // ===== 渲染 =====
@@ -243,6 +246,7 @@ int main()
 {
     ps2_init();
     init_vga();
+    audio_init();
     draw_apple_side_bar();
 
     reset_game();
@@ -250,7 +254,7 @@ int main()
     while (1)
     {
         game_tick();
-
+        audio_tick();
         // 这里你可以加 delay / timer 控制 tick 速度
     }
 }
