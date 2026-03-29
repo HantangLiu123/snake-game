@@ -1,6 +1,7 @@
 #include "render.h"
 #include "address_map.h"
 #include "game.h"
+#include "sound.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -333,6 +334,8 @@ void update_snake(const Coordinate *snake_body)
     // animation
     for (int step = 0; step < GRID_SIZE; step++)
     {
+        audio_tick();
+
         // draw head
         head_pixel.x += head_dx;
         head_pixel.y += head_dy;

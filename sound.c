@@ -2,6 +2,7 @@
 #include "address_map.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #define AUDIO_FIFOSPACE 1
 #define AUDIO_LEFTDATA 2
