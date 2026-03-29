@@ -4,3 +4,4 @@
 *.elf
 *.ini
 *.DS_Store
+.vscode/
