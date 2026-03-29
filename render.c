@@ -277,7 +277,7 @@ void update_snake(const Coordinate *snake_body)
 {
     // find new length
     int length = 0;
-    while (snake_body[length].x != -1)
+    while (snake_body[length].x != -1 && length < SNAKE_MAX_LENGTH)
         length++;
 
     // first frame
@@ -574,9 +574,9 @@ void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
 
     wait_for_sync();
 
-    flash_snake_death(last_snake, length, head_pixel, is_horizontal);
+    flash_snake_death(last_snake, last_length, head_pixel, is_horizontal);
 
-    dissolve_snake(last_snake, length);
+    dissolve_snake(last_snake, last_length);
 
     memcpy(last_snake, snake_body, sizeof(Coordinate) * SNAKE_MAX_LENGTH);
 }
