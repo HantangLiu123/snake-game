@@ -3,17 +3,12 @@
 
 #include <stdint.h>
 
-// Snake direction constants
-#define DIR_RIGHT 0
-#define DIR_DOWN  1
-#define DIR_LEFT  2
-#define DIR_UP    3
-
 // Input command buffer size
 #define INPUT_BUF_SIZE 16
 
 // Buffered input command types
-typedef enum {
+typedef enum
+{
     CMD_NONE = 0,
     CMD_UP,
     CMD_LEFT,
@@ -22,10 +17,12 @@ typedef enum {
     CMD_SPACE
 } InputCmd;
 
-extern volatile int snake_dir;
-
 void ps2_init(void);
 void ps2_apply_buffered_input(volatile int *game_running);
+
+// pop an input out of the buffer, if the cmd popped out is CMD_NONE,
+// the buffer is already empty
+InputCmd pop_input(void);
 void handler(void) __attribute__((interrupt("machine")));
 
 #endif
