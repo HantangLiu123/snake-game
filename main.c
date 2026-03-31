@@ -211,6 +211,7 @@ void game_tick()
         status = STATUS_END;
         update_status(STATUS_END);
         draw_win_img();
+        play_success_sound();
         return;
     }
 
