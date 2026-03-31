@@ -217,15 +217,6 @@ void game_tick()
         return;
     }
 
-    if (snake_length == SNAKE_MAX_LENGTH)
-    {
-        status = STATUS_END;
-        update_status(STATUS_END);
-        draw_win_img();
-        play_success_sound();
-        return;
-    }
-
     // ===== 是否吃苹果 =====
     bool ate = false;
     int apple_index = -1;
@@ -254,6 +245,15 @@ void game_tick()
 
     // ===== 渲染 =====
     update_snake(snake);
+
+    if (snake_length == SNAKE_MAX_LENGTH)
+    {
+        status = STATUS_END;
+        update_status(STATUS_END);
+        draw_win_img();
+        play_success_sound();
+        return;
+    }
 }
 
 int main()
