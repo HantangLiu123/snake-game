@@ -38,4 +38,7 @@ void clear_digit();
 // interface for updating the game status showing on the side bar
 void update_status(GameStatus status);
 
+void draw_gameover_img();
+void draw_win_img();
+
 #endif

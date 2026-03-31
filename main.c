@@ -201,6 +201,7 @@ void game_tick()
         update_snake_death(snake, hit_wall);
         status = STATUS_END;
         update_status(STATUS_END);
+        draw_gameover_img();
         play_gameover_sound();
         return;
     }
@@ -209,6 +210,7 @@ void game_tick()
     {
         status = STATUS_END;
         update_status(STATUS_END);
+        draw_win_img();
         return;
     }
 
