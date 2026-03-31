@@ -194,7 +194,7 @@ void extract_snake_keypoints(const Coordinate *snake_body, Coordinate *output_po
     int length = 0;
 
     // find snake length
-    while (length < 255 && snake_body[length].x != -1 && snake_body[length].y != -1)
+    while (length < SNAKE_MAX_LENGTH && snake_body[length].x != -1 && snake_body[length].y != -1)
     {
         length++;
     }
@@ -281,7 +281,7 @@ void update_snake(const Coordinate *snake_body)
 {
     // find new length
     int length = 0;
-    while (snake_body[length].x != -1 && length < SNAKE_MAX_LENGTH)
+    while (length < SNAKE_MAX_LENGTH && snake_body[length].x != -1)
         length++;
 
     // first frame
@@ -311,7 +311,7 @@ void update_snake(const Coordinate *snake_body)
 
     // old length
     int last_length = 0;
-    while (last_snake[last_length].x != -1)
+    while (last_length < SNAKE_MAX_LENGTH && last_snake[last_length].x != -1)
         last_length++;
 
     bool grew = (length > last_length);
@@ -530,12 +530,12 @@ void update_snake_death(const Coordinate *snake_body, bool hit_on_wall)
 {
     // current length
     int length = 0;
-    while (snake_body[length].x != -1)
+    while (length < SNAKE_MAX_LENGTH && snake_body[length].x != -1)
         length++;
 
     // length of last tick
     int last_length = 0;
-    while (last_snake[last_length].x != -1)
+    while (last_length < SNAKE_MAX_LENGTH && last_snake[last_length].x != -1)
         last_length++;
 
     // head movement
