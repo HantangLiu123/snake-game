@@ -137,24 +137,35 @@ static void handle_input()
 // ================= 随机生成苹果 =================
 static void try_spawn_apple()
 {
-    // 随机概率生成
     if (rand() % 10 != 0)
         return;
 
     if (apple_count >= MAX_APPLES)
         return;
 
-    int x, y;
+    Coordinate empty[WIDTH * HEIGHT];
+    int empty_count = 0;
 
-    do
+    for (int x = 0; x < WIDTH; x++)
     {
-        x = rand() % WIDTH;
-        y = rand() % HEIGHT;
-    } while (is_on_snake(x, y) || is_on_apple(x, y));
+        for (int y = 0; y < HEIGHT; y++)
+        {
+            if (!is_on_snake(x, y) && !is_on_apple(x, y))
+            {
+                empty[empty_count++] = (Coordinate){x, y};
+            }
+        }
+    }
 
-    apples[apple_count++] = (Coordinate){x, y};
+    if (empty_count == 0)
+        return; // 或者触发胜利
 
-    draw_apple(x, y);
+    int idx = rand() % empty_count;
+
+    Coordinate c = empty[idx];
+    apples[apple_count++] = c;
+
+    draw_apple(c.x, c.y);
 }
 
 // ================= 主更新 =================
