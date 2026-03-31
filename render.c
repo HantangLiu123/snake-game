@@ -24,7 +24,7 @@
 #define SIDEBAR_X 260
 #define SIDEBAR_Y 20
 
-#define IMG_X 110
+#define IMG_X 85
 #define IMG_Y 85
 
 #define DIGIT_SPACING 2
@@ -418,8 +418,8 @@ void draw_apple(int game_x, int game_y)
     }
 
     // leaf
-    plot_pixel_both_buffers(c.x + 1, c.y - 5, LEAF_GREEN);
-    plot_pixel_both_buffers(c.x + 2, c.y - 5, LEAF_GREEN);
+    plot_pixel_both_buffers(c.x + 1, c.y - 4, LEAF_GREEN);
+    plot_pixel_both_buffers(c.x + 2, c.y - 4, LEAF_GREEN);
 
     // highlight
     plot_pixel_both_buffers(c.x - 2, c.y - 2, DARK_RED);
