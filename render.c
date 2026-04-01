@@ -431,16 +431,16 @@ static void draw_dead_eyes(Coordinate head_pixel, bool is_horizontal)
 
     if (is_horizontal)
     {
-        // 两个眼睛上下
+        // two eyes are vertical
         int x = head_pixel.x;
 
-        // 上眼
+        // top
         plot_pixel(x - 1, head_pixel.y - offset - 1, 0xffff);
         plot_pixel(x + 1, head_pixel.y - offset + 1, 0xffff);
         plot_pixel(x - 1, head_pixel.y - offset + 1, 0xffff);
         plot_pixel(x + 1, head_pixel.y - offset - 1, 0xffff);
 
-        // 下眼
+        // bottom
         plot_pixel(x - 1, head_pixel.y + offset - 1, 0xffff);
         plot_pixel(x + 1, head_pixel.y + offset + 1, 0xffff);
         plot_pixel(x - 1, head_pixel.y + offset + 1, 0xffff);
@@ -448,16 +448,16 @@ static void draw_dead_eyes(Coordinate head_pixel, bool is_horizontal)
     }
     else
     {
-        // 左右眼
+        // two eyes are horizontal
         int y = head_pixel.y;
 
-        // 左眼
+        // left
         plot_pixel(head_pixel.x - offset - 1, y - 1, 0xffff);
         plot_pixel(head_pixel.x - offset + 1, y + 1, 0xffff);
         plot_pixel(head_pixel.x - offset - 1, y + 1, 0xffff);
         plot_pixel(head_pixel.x - offset + 1, y - 1, 0xffff);
 
-        // 右眼
+        // right
         plot_pixel(head_pixel.x + offset - 1, y - 1, 0xffff);
         plot_pixel(head_pixel.x + offset + 1, y + 1, 0xffff);
         plot_pixel(head_pixel.x + offset - 1, y + 1, 0xffff);

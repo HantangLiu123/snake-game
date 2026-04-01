@@ -38,7 +38,10 @@ void clear_digit();
 // interface for updating the game status showing on the side bar
 void update_status(GameStatus status);
 
+// interface for drawing the gameover image after the snake dies
 void draw_gameover_img();
+
+// interface for drawing the win image after the snake reaches max length
 void draw_win_img();
 
 #endif

@@ -6,23 +6,22 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define MAX_APPLES 10 // 你可以改
+#define MAX_APPLES 10
 
-// ================= 状态 =================
+// game state / status
 static GameStatus status = STATUS_PAUSE;
 
-// ================= 蛇 =================
+// snake data (position & length & direction)
 static Coordinate snake[SNAKE_MAX_LENGTH];
 static int snake_length = 3;
 
 static Direction current_dir = DIR_RIGHT;
 static Direction next_dir = DIR_RIGHT;
 
-// ================= 苹果 =================
+// apple data (positions of all apples)
 static Coordinate apples[MAX_APPLES];
 static int apple_count = 0;
 
-// ================= 工具函数 =================
 static bool is_opposite(Direction a, Direction b)
 {
     return (a == DIR_UP && b == DIR_DOWN) || (a == DIR_DOWN && b == DIR_UP) || (a == DIR_LEFT && b == DIR_RIGHT) ||
@@ -49,7 +48,7 @@ static bool is_on_apple(int x, int y)
     return false;
 }
 
-// ================= 初始化 =================
+// initialize a new game
 static void reset_game()
 {
     for (int i = 0; i < SNAKE_MAX_LENGTH; i++)
@@ -57,7 +56,7 @@ static void reset_game()
 
     snake_length = 3;
 
-    // 初始蛇：(4,7) 向右
+    // initial snake
     snake[0] = (Coordinate){4, 7};
     snake[1] = (Coordinate){3, 7};
     snake[2] = (Coordinate){2, 7};
@@ -77,7 +76,7 @@ static void reset_game()
     update_snake(snake);
 }
 
-// ================= 输入处理 =================
+// handle input in each game tick
 static void handle_input()
 {
     InputCmd cmd;
@@ -88,7 +87,7 @@ static void handle_input()
         if (cmd == CMD_NONE)
             break;
 
-        // ========= SPACE =========
+        // space toggle game status
         if (cmd == CMD_SPACE)
         {
             if (status == STATUS_PAUSE)
@@ -107,10 +106,10 @@ static void handle_input()
                 status = STATUS_PAUSE;
                 return;
             }
-            return; // 一个 tick 只处理一个有效输入
+            return;
         }
 
-        // ========= 方向 =========
+        // directions (should only change when running)
         if (status != STATUS_RUN)
             continue;
 
@@ -125,7 +124,7 @@ static void handle_input()
         else
             new_dir = DIR_RIGHT;
 
-        // 防止反向
+        // opposite direction and same direction are not valid
         if (!is_opposite(current_dir, new_dir) && current_dir != new_dir)
         {
             next_dir = new_dir;
@@ -134,7 +133,8 @@ static void handle_input()
     }
 }
 
-// ================= 随机生成苹果 =================
+// spawn an apple at a random location that is not on the snake or
+// on current apples
 static void try_spawn_apple()
 {
     if (rand() % 10 != 0)
@@ -158,7 +158,7 @@ static void try_spawn_apple()
     }
 
     if (empty_count == 0)
-        return; // 或者触发胜利
+        return;
 
     int idx = rand() % empty_count;
 
@@ -168,7 +168,7 @@ static void try_spawn_apple()
     draw_apple(c.x, c.y);
 }
 
-// ================= 主更新 =================
+// a game tick
 void game_tick()
 {
     handle_input();
@@ -178,13 +178,13 @@ void game_tick()
 
     try_spawn_apple();
 
-    // 更新方向
+    // update direction
     current_dir = next_dir;
 
     Coordinate head = snake[0];
     Coordinate new_head = head;
 
-    // ===== 计算下一步 =====
+    // update the head
     if (current_dir == DIR_UP)
         new_head.y--;
     else if (current_dir == DIR_DOWN)
@@ -194,12 +194,12 @@ void game_tick()
     else
         new_head.x++;
 
-    // ===== 判断死亡 =====
+    // check if the snake dies
     bool hit_wall = (new_head.x < 0 || new_head.x >= WIDTH || new_head.y < 0 || new_head.y >= HEIGHT);
 
     bool hit_self = is_on_snake(new_head.x, new_head.y);
 
-    // ===== 移动蛇 =====
+    // move the snake
     Coordinate old_tail = snake[snake_length - 1];
     for (int i = snake_length - 1; i > 0; i--)
     {
@@ -217,7 +217,7 @@ void game_tick()
         return;
     }
 
-    // ===== 是否吃苹果 =====
+    // check if the snake eats an apple (is head on apple?)
     bool ate = false;
     int apple_index = -1;
 
@@ -233,17 +233,19 @@ void game_tick()
 
     if (ate)
     {
+        // update length
         snake_length++;
         snake[snake_length - 1] = old_tail;
 
-        // 删除苹果
+        // remove the apple
         apples[apple_index] = apples[--apple_count];
 
+        // update scoreboard and play an apple sound
         update_digit(snake_length - 3);
         play_apple_sound();
     }
 
-    // ===== 渲染 =====
+    // render the snake animation to the new position
     update_snake(snake);
 
     if (snake_length == SNAKE_MAX_LENGTH)
@@ -269,6 +271,5 @@ int main()
     {
         game_tick();
         audio_tick();
-        // 这里你可以加 delay / timer 控制 tick 速度
     }
 }
