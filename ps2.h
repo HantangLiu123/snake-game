@@ -18,7 +18,6 @@ typedef enum
 } InputCmd;
 
 void ps2_init(void);
-void ps2_apply_buffered_input(volatile int *game_running);
 
 // pop an input out of the buffer, if the cmd popped out is CMD_NONE,
 // the buffer is already empty
