@@ -4891,10 +4891,10 @@ static const unsigned char success[]  = {
 
 void play_apple_sound()
 {
-    cur_sound = apple;
-    cur_len = sizeof(apple);
-    cur_pos = 0;
-    is_playing = true;
+    cur_sound = apple;  // load apple sound
+    cur_len = sizeof(apple); // sound length
+    cur_pos = 0; // start from beginning
+    is_playing = true; // start playback
 }
 
 void play_gameover_sound()
@@ -4920,26 +4920,26 @@ void audio_tick()
 
     volatile int *audio_ptr = (volatile int *)AUDIO_BASE;
 
-    int fifospace = audio_ptr[AUDIO_FIFOSPACE];
-    int wsrc = (fifospace >> 16) & 0xFF;
-    int wslc = (fifospace >> 24) & 0xFF;
+    int fifospace = audio_ptr[AUDIO_FIFOSPACE]; // read FIFO space
+    int wsrc = (fifospace >> 16) & 0xFF; // right channel free space
+    int wslc = (fifospace >> 24) & 0xFF; // left channel free space
 
-    // 每次尽量填，但不阻塞
+    // fill FIFO without blocking
     while (wsrc > 0 && wslc > 0 && cur_pos + 1 < cur_len)
     {
-        int16_t s = (int16_t)(cur_sound[cur_pos] | (cur_sound[cur_pos + 1] << 8));
+        int16_t s = (int16_t)(cur_sound[cur_pos] | (cur_sound[cur_pos + 1] << 8)); // rebuild one 16-bit sample
 
-        int32_t out = ((int32_t)s) << 16;
+        int32_t out = ((int32_t)s) << 16; // convert to audio output format
 
-        audio_ptr[AUDIO_LEFTDATA] = out;
+        audio_ptr[AUDIO_LEFTDATA] = out; // write left channel
         audio_ptr[AUDIO_RIGHTDATA] = out;
 
-        cur_pos += 2;
+        cur_pos += 2; // move to next sample
         wsrc--;
         wslc--;
     }
 
-    // 播完
+    // stop when sound finish
     if (cur_pos + 1 >= cur_len)
     {
         is_playing = false;
